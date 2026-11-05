@@ -149,7 +149,11 @@ textarea.in{min-height:90px;font-size:16px;resize:vertical}
 
 /* ───────────── STAT ───────────── */
 .dial{display:grid;grid-template-columns:1fr;justify-items:center;position:relative}
-.dial svg{width:100%;max-width:330px;height:auto;overflow:visible}
+.gwrap{position:relative;width:100%;max-width:330px}
+.gwrap svg{display:block;width:100%;height:auto;overflow:hidden}
+.glabels span{position:absolute;transform:translate(-50%,-50%);font-family:var(--f-display);font-size:20px;line-height:1}
+.goalLbl{text-align:right;font-size:10px;letter-spacing:.14em;opacity:.75;margin-bottom:2px}
+.dayLbl{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10px;letter-spacing:.08em;opacity:.75;margin-top:4px}
 .dial .readout{margin-top:-6px;text-align:center;line-height:.8}
 .dial .readout b{display:block;font-family:var(--f-display);font-weight:400;font-size:74px;letter-spacing:.02em;
   text-shadow:0 0 2px rgba(var(--ph-rgb),1), 0 0 14px rgba(var(--ph-rgb),.7), 0 0 40px rgba(var(--ph-rgb),.35)}
@@ -475,7 +479,7 @@ body{
 }
 @media (max-width:340px){.brand small{display:none}.lcd #lcdTime,.lcd > span:nth-child(2){display:none}}
 /* installed app: fill the whole glass, including the home-indicator strip */
-html.pwa,html.pwa body{background:#25271f}
+html.pwa,html.pwa body{background:var(--tex-steel, #2a2c26) center / cover, #2a2c26}
 html.pwa .device{position:fixed;top:0;bottom:0;left:0;right:0;height:auto;padding-top:calc(10px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, calc(env(safe-area-inset-bottom, 0px) - 2px))}
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 </style></head><body>
@@ -1060,14 +1064,14 @@ function gauge(v){
   const cx = 160, cy = 160, R = 132;
   const pt = (a, r) => [cx + r*Math.cos(a), cy + r*Math.sin(a)];
   const ang = s => Math.PI + (s/100) * Math.PI;
-  let ticks = '';
+  let ticks = '', labels = '';
   for (let s = 0; s <= 100; s += 2.5){ const major = s % 25 === 0, mid = s % 5 === 0;
     const [x1,y1] = pt(ang(s), R), [x2,y2] = pt(ang(s), R - (major?18:mid?11:6));
     ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="currentColor" stroke-width="${major?2.4:1.2}" opacity="${major?1:.7}"/>`;
-    if (major){ const [tx,ty] = pt(ang(s), R - 32); ticks += `<text x="${tx.toFixed(1)}" y="${(ty+5).toFixed(1)}" text-anchor="middle" fill="currentColor" font-family="VT323, monospace" font-size="20">${s}</text>`; } }
+    if (major){ const [tx,ty] = pt(ang(s), R - 32); labels += `<span style="left:${(tx/320*100).toFixed(2)}%;top:${(ty/178*100).toFixed(2)}%">${s}</span>`; } }
   const arc = (a,b,r) => { const [x1,y1] = pt(ang(a),r), [x2,y2] = pt(ang(b),r); return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`; };
   const [nx,ny] = pt(ang(v), R - 22);
-  return `<svg viewBox="0 0 320 178" role="img" aria-label="Daily score ${v} of 100">
+  return `<div class="gwrap"><svg viewBox="0 0 320 178" role="img" aria-label="Daily score ${v} of 100">
     <path d="${arc(0,100,R+8)}" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>
     <path d="${arc(0,20,R+4)}" fill="none" stroke="var(--alert)" stroke-width="6" opacity=".85"/>
     <path d="${arc(0,Math.max(.5,v),R+4)}" fill="none" stroke="currentColor" stroke-width="3" opacity=".5"/>
@@ -1075,7 +1079,7 @@ function gauge(v){
     <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${v<=20?'var(--alert)':'currentColor'}" stroke-width="3" stroke-linecap="round"/>
     <circle cx="${cx}" cy="${cy}" r="9" fill="var(--screen)" stroke="currentColor" stroke-width="2"/>
     <circle cx="${cx}" cy="${cy}" r="3" fill="currentColor"/>
-  </svg>`;
+  </svg><div class="glabels" aria-hidden="true">${labels}</div></div>`;
 }
 const meter = (label, val, max, unit, over) => `<div class="meter"><div class="top"><span class="lbl">${label}</span><b>${fmt(val)}<span class="dim small"> / ${fmt(max)}${unit||''}</span></b></div><div class="bar${over?' over':''}" style="--w:${clamp(val/max*100,0,100).toFixed(1)}%"><i></i></div></div>`;
 
@@ -1452,7 +1456,8 @@ function vSteps(){
   const bw = 300/7;
   const bars = vals.map((v,i) => { const h = v/max*110, x = i*bw + 6, y = 130 - h;
     return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-12).toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" fill="${v>=goal?'var(--ph)':'rgba(var(--ph-rgb),.35)'}"/>
-    <text x="${(x+(bw-12)/2).toFixed(1)}" y="146" text-anchor="middle">${DOW[(parse(days[i]).getDay()+6)%7].slice(0,2)}</text>`; }).join('');
+`; }).join('');
+  const dayLbl = days.map(x => `<span>${DOW[(parse(x).getDay()+6)%7].slice(0,2)}</span>`).join('');
   const gy = 130 - goal/max*110;
   return `<div class="crumb"><span>STEPS // PEDOMETER</span><span>GOAL ${fmt(goal)}</span></div>
   <div class="ring"><svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="${R}" fill="none" stroke="rgba(var(--ph-rgb),.15)" stroke-width="16"/>
@@ -1463,9 +1468,9 @@ function vSteps(){
   <p class="dim small">The live counter uses your phone's motion sensor while this screen is open (keep it in your pocket, screen on). Web apps cannot read Apple Health or Google Fit, so at night enter your phone's total below and FORMA keeps the higher number.</p>
   <div class="grid3"><button class="btn sm" data-add="500">+500</button><button class="btn sm" data-add="1000">+1,000</button><button class="btn sm" data-add="2500">+2,500</button></div>
   <div class="row"><label class="field grow"><span>Total from Health app</span><input class="in" id="stepSet" type="number" inputmode="numeric" placeholder="${r.steps}"></label><button class="btn" data-act="stepSet">SET</button></div>
-  <div class="panel chart"><span class="tab">Last 7 days</span><svg viewBox="0 0 300 152">
+  <div class="panel chart"><span class="tab">Last 7 days</span><div class="goalLbl">GOAL ${fmt(goal)}</div><svg viewBox="0 0 300 134">
     <line x1="0" x2="300" y1="${gy.toFixed(1)}" y2="${gy.toFixed(1)}" stroke="var(--ph)" stroke-dasharray="4 3" opacity=".7"/>
-    <text x="298" y="${(gy-4).toFixed(1)}" text-anchor="end">${fmt(goal)}</text>${bars}</svg></div>`;
+    ${bars}</svg><div class="dayLbl">${dayLbl}</div></div>`;
 }
 async function togglePed(){
   if (ped.on){ ped.on = false; window.removeEventListener('devicemotion', onMotion); try { ped.wake && ped.wake.release(); } catch(e){} save(true); return render(); }
@@ -1631,7 +1636,7 @@ function vMonth(){
 function vSetup(){
   const p = P(), t = targets(), im = imp();
   const ft = Math.floor(p.heightCm/2.54/12), inch = Math.round(p.heightCm/2.54 - ft*12);
-  return `<div class="crumb"><span>SETUP // OPERATOR PROFILE</span><span>v1.0</span></div>
+  return `<div class="crumb"><span>SETUP // OPERATOR PROFILE</span><span>BUILD 5</span></div>
   <h2 class="h">Operator profile</h2>
   <div class="panel"><span class="tab">Body</span><div class="stack">
     <div class="seg"><button class="${im?'on':''}" data-units="imperial">LB · FT</button><button class="${!im?'on':''}" data-units="metric">KG · CM</button></div>
@@ -1825,7 +1830,8 @@ function boot(){
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden){ finalizePast(); render(); } else save(true); });
 if ('serviceWorker' in navigator && location.protocol === 'https:' && !/claude|claudeusercontent/.test(location.hostname)){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(r => r.update()).catch(()=>{});
+  let reloaded = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded){ reloaded = true; location.reload(); } });
 }
 boot();
 </script>
