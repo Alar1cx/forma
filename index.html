@@ -45,11 +45,11 @@ button{cursor:pointer}
   color:var(--ph);
   text-shadow:0 0 1px rgba(var(--ph-rgb),.9), 0 0 6px rgba(var(--ph-rgb),.45), 0 0 16px rgba(var(--ph-rgb),.18);
   box-shadow: inset 0 0 50px rgba(0,0,0,.9), inset 0 0 6px rgba(0,0,0,.9);
-  animation:flicker 7s infinite steps(1);
 }
-@keyframes flicker{0%,100%{filter:none}41%{filter:brightness(1.06)}42%{filter:none}77%{filter:brightness(.94)}78%{filter:none}}
+/* flicker lives on an overlay's opacity: iOS Safari leaves ghost text behind when a filter animates over a scrolling area */
+@keyframes flicker{0%,100%{opacity:1}41%{opacity:.82}42%{opacity:1}77%{opacity:1.12}78%{opacity:1}}
 .fx{position:absolute;inset:0;pointer-events:none;z-index:30;border-radius:inherit}
-.fx.scan{background:repeating-linear-gradient(180deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px);mix-blend-mode:multiply}
+.fx.scan{background:repeating-linear-gradient(180deg, rgba(0,0,0,.24) 0 1px, transparent 1px 3px)}
 .fx.mask{background:repeating-linear-gradient(90deg, rgba(255,0,0,.025) 0 1px, rgba(0,255,0,.02) 1px 2px, rgba(0,0,255,.025) 2px 3px)}
 .fx.vig{background:radial-gradient(140% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 85%, rgba(0,0,0,.9) 100%)}
 .fx.glare{background:
@@ -58,8 +58,10 @@ button{cursor:pointer}
 .fx.roll{background:linear-gradient(180deg, transparent, rgba(var(--ph-rgb),.06) 45%, rgba(var(--ph-rgb),.09) 50%, transparent);
   height:22%;inset:auto 0 auto 0;top:-25%;animation:roll 9s linear infinite}
 @keyframes roll{to{top:110%}}
-canvas.fx.noise{width:100%;height:100%;opacity:.07;mix-blend-mode:screen;image-rendering:pixelated}
-@media (prefers-reduced-motion:reduce){.screen,.lamp,.fx.roll,.blink,.laser{animation:none!important}.fx.roll{display:none}}
+canvas.fx.noise{width:100%;height:100%;opacity:.035;image-rendering:pixelated}
+.fx.vig{animation:flicker 7s infinite steps(1)}
+.view svg text{text-shadow:none}
+@media (prefers-reduced-motion:reduce){.screen,.lamp,.fx.roll,.fx.vig,.blink,.laser{animation:none!important}.fx.roll{display:none}}
 
 .view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:16px 16px 28px;z-index:1;
   scrollbar-width:thin;scrollbar-color:rgba(var(--ph-rgb),.5) transparent;-webkit-overflow-scrolling:touch}
@@ -474,7 +476,7 @@ body{
 @media (max-width:340px){.brand small{display:none}.lcd #lcdTime,.lcd > span:nth-child(2){display:none}}
 /* installed app: fill the whole glass, including the home-indicator strip */
 html.pwa,html.pwa body{background:#25271f}
-html.pwa .device{height:100vh;height:100dvh;padding-top:calc(10px + env(safe-area-inset-top, 0px));padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px))}
+html.pwa .device{position:fixed;top:0;bottom:0;left:0;right:0;height:auto;padding-top:calc(10px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, calc(env(safe-area-inset-bottom, 0px) - 2px))}
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 </style></head><body>
 <div class="device" id="device">
@@ -1070,7 +1072,7 @@ function gauge(v){
     <path d="${arc(0,20,R+4)}" fill="none" stroke="var(--alert)" stroke-width="6" opacity=".85"/>
     <path d="${arc(0,Math.max(.5,v),R+4)}" fill="none" stroke="currentColor" stroke-width="3" opacity=".5"/>
     ${ticks}
-    <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${v<=20?'var(--alert)':'currentColor'}" stroke-width="3" stroke-linecap="round" style="filter:drop-shadow(0 0 4px currentColor)"/>
+    <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${v<=20?'var(--alert)':'currentColor'}" stroke-width="3" stroke-linecap="round"/>
     <circle cx="${cx}" cy="${cy}" r="9" fill="var(--screen)" stroke="currentColor" stroke-width="2"/>
     <circle cx="${cx}" cy="${cy}" r="3" fill="currentColor"/>
   </svg>`;
@@ -1454,7 +1456,7 @@ function vSteps(){
   const gy = 130 - goal/max*110;
   return `<div class="crumb"><span>STEPS // PEDOMETER</span><span>GOAL ${fmt(goal)}</span></div>
   <div class="ring"><svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="${R}" fill="none" stroke="rgba(var(--ph-rgb),.15)" stroke-width="16"/>
-    <circle cx="110" cy="110" r="${R}" fill="none" stroke="var(--ph)" stroke-width="16" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 110 110)" style="filter:drop-shadow(0 0 6px var(--ph))"/>
+    <circle cx="110" cy="110" r="${R}" fill="none" stroke="var(--ph)" stroke-width="16" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 110 110)"/>
     <circle cx="110" cy="110" r="${R-14}" fill="none" stroke="rgba(var(--ph-rgb),.4)" stroke-width="1" stroke-dasharray="2 4"/></svg>
     <div class="c"><b id="stepNum">${fmt(r.steps)}</b><span class="lbl">${r.steps>=goal?'GOAL MET':fmt(goal-r.steps)+' TO GO'}</span></div></div>
   <button class="btn block ${ped.on?'on':''}" data-act="ped">${ped.on?'● COUNTING — TAP TO STOP':'START LIVE STEP COUNTER'}</button>
